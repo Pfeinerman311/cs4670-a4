@@ -14,15 +14,20 @@ from torchvision import transforms, datasets
 # END IMPORTS
 
 #########################################################
-###              BASELINE MODEL
+# BASELINE MODEL
 #########################################################
+
 
 class AnimalBaselineNet(nn.Module):
     def __init__(self, num_classes=16):
         super(AnimalBaselineNet, self).__init__()
         # TODO: Define layers of model architecture
         # TODO-BLOCK-BEGIN
-
+        self.conv1 = nn.Conv2d(3, 6, 3, 2, 1)
+        self.conv2 = nn.Conv2d(6, 12, 3, 2, 1)
+        self.conv3 = nn.Conv2d(12, 24, 3, 2, 1)
+        self.fc = nn.Linear(1536, 128)
+        self.cls = nn.Linear(128, 16)
         # TODO-BLOCK-END
 
     def forward(self, x):
@@ -30,9 +35,18 @@ class AnimalBaselineNet(nn.Module):
 
         # TODO: Define forward pass
         # TODO-BLOCK-BEGIN
-
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.conv3(x)
+        x = F.relu(x)
+        x = self.fc(x)
+        x = F.relu(x)
+        x = self.cls(x)
         # TODO-BLOCK-END
         return x
+
 
 def model_train(net, inputs, labels, criterion, optimizer):
     """
@@ -59,19 +73,25 @@ def model_train(net, inputs, labels, criterion, optimizer):
     """
     # TODO: Foward pass
     # TODO-BLOCK-BEGIN
-
+    size = len(inputs.dataset)
+    for batch, (X, y) in enumerate(inputs):
+        pred = net(X)
+        loss = criterion(pred, y)
     # TODO-BLOCK-END
 
     # TODO: Backward pass
     # TODO-BLOCK-BEGIN
-
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
     # TODO-BLOCK-END
 
     return running_loss, num_correct, total_images
 
 #########################################################
-###               DATA AUGMENTATION
+# DATA AUGMENTATION
 #########################################################
+
 
 class Shift(object):
     """
@@ -83,6 +103,7 @@ class Shift(object):
     Inputs:
         max_shift  float; maximum magnitude amount to shift image in x and y directions.
     """
+
     def __init__(self, max_shift=10):
         self.max_shift = max_shift
 
@@ -107,6 +128,7 @@ class Shift(object):
 
     def __repr__(self):
         return self.__class__.__name__
+
 
 class Contrast(object):
     """
@@ -149,6 +171,7 @@ class Contrast(object):
     def __repr__(self):
         return self.__class__.__name__
 
+
 class Rotate(object):
     """
     Rotates input image by random angle within [-max_angle, max_angle]. Positive angle corresponds to
@@ -159,6 +182,7 @@ class Rotate(object):
 
 
     """
+
     def __init__(self, max_angle=10):
         self.max_angle = max_angle
 
@@ -173,7 +197,7 @@ class Rotate(object):
                             Pixels outside original image boundary set to 0 (black).
         """
         image = image.numpy()
-        _, H, W  = image.shape
+        _, H, W = image.shape
 
         # TODO: Rotate image
         # TODO-BLOCK-BEGIN
@@ -185,6 +209,7 @@ class Rotate(object):
     def __repr__(self):
         return self.__class__.__name__
 
+
 class HorizontalFlip(object):
     """
     Randomly flips image horizontally.
@@ -193,6 +218,7 @@ class HorizontalFlip(object):
         p          float in range [0,1]; probability that image should
                    be randomly rotated
     """
+
     def __init__(self, p=0.5):
         self.p = p
 
@@ -219,8 +245,9 @@ class HorizontalFlip(object):
         return self.__class__.__name__
 
 #########################################################
-###             STUDENT MODEL
+# STUDENT MODEL
 #########################################################
+
 
 def get_student_settings(net):
     """
@@ -228,7 +255,7 @@ def get_student_settings(net):
     optimizer to be used for training.
     """
     dataset_means = [123./255., 116./255.,  97./255.]
-    dataset_stds  = [ 54./255.,  53./255.,  52./255.]
+    dataset_stds = [54./255.,  53./255.,  52./255.]
 
     # TODO: Create data transform pipeline for your model
     # transforms.ToPILImage() must be first, followed by transforms.ToTensor()
@@ -249,6 +276,7 @@ def get_student_settings(net):
 
     return transform, batch_size, epochs, criterion, optimizer
 
+
 class AnimalStudentNet(nn.Module):
     def __init__(self, num_classes=16):
         super(AnimalStudentNet, self).__init__()
@@ -267,8 +295,9 @@ class AnimalStudentNet(nn.Module):
         return x
 
 #########################################################
-###             ADVERSARIAL IMAGES
+# ADVERSARIAL IMAGES
 #########################################################
+
 
 def get_adversarial(img, output, label, net, criterion, epsilon):
     """
@@ -302,4 +331,3 @@ def get_adversarial(img, output, label, net, criterion, epsilon):
     # TODO-BLOCK-END
 
     return perturbed_image, noise
-
