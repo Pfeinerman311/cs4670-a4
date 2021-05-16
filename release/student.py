@@ -4,6 +4,7 @@
 import numpy as np
 import cv2
 import random
+from numpy.core.fromnumeric import reshape
 
 import torch
 import torch.nn as nn
@@ -11,6 +12,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import transforms, datasets
 import sys
+import scipy
+from scipy import ndimage, misc
 
 # END IMPORTS
 
@@ -127,15 +130,11 @@ class Shift(object):
         # TODO-BLOCK-BEGIN
         x, y = np.random.randint(-self.max_shift, self.max_shift +
                                  1), np.random.randint(-self.max_shift, self.max_shift+1)
-        image = np.roll(image, (y, x), axis=(1, 2))
-        if x > 0:
-            image[:, :, :x] = 0
-        elif x < 0:
-            image[:, :, x:] = 0
-        if y > 0:
-            image[:, :y, :] = 0
-        elif y < 0:
-            image[:, y:, :] = 0
+        shift = np.float32([[1, 0, x], [0, 1, y]])
+        for chan in range(3):
+            image[chan, :, :] = cv2.warpAffine(
+                image[chan, :, :], shift, (H, W))
+
         # TODO-BLOCK-END
 
         return torch.Tensor(image)
@@ -226,7 +225,11 @@ class Rotate(object):
 
         # TODO: Rotate image
         # TODO-BLOCK-BEGIN
-
+        angle = np.random.randint(-self.max_angle, self.max_angle+1)
+        rot = cv2.getRotationMatrix2D((H/2, W/2), angle, 1)
+        for chan in range(3):
+            image[chan, :, :] = cv2.warpAffine(
+                image[chan, :, :], rot, (H, W))
         # TODO-BLOCK-END
 
         return torch.Tensor(image)
@@ -261,7 +264,10 @@ class HorizontalFlip(object):
 
         # TODO: Flip image
         # TODO-BLOCK-BEGIN
-
+        flip = np.random.choice(np.array([True, False]), p=[self.p, 1-self.p])
+        if flip:
+            for chan in range(3):
+                image[chan, :, :] = cv2.flip(image[chan, :, :], 1)
         # TODO-BLOCK-END
 
         return torch.Tensor(image)
