@@ -35,11 +35,17 @@ class AnimalBaselineNet(nn.Module):
 
         # TODO: Define forward pass
         # TODO-BLOCK-BEGIN
+        #x = nn.Flatten(x)
+        #x = torch.reshape(x, (x.shape[0], -1))
+        #x = torch.reshape(x, (128, 3, 64, 64))
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
         x = F.relu(x)
         x = self.conv3(x)
+        #x = torch.reshape(x, (-1, 3, 64, 64))
+        #x = torch.reshape(x, (x.shape[0], -1))
+        x = x.flatten(start_dim=2)
         x = F.relu(x)
         x = self.fc(x)
         x = F.relu(x)
@@ -73,17 +79,35 @@ def model_train(net, inputs, labels, criterion, optimizer):
     """
     # TODO: Foward pass
     # TODO-BLOCK-BEGIN
-    size = len(inputs.dataset)
-    for batch, (X, y) in enumerate(inputs):
-        pred = net(X)
-        loss = criterion(pred, y)
+    running_loss = 0
+    num_correct = 0
+    total_images = len(inputs)
+    print(inputs.shape)
+    inp = inputs.flatten(start_dim=2, end_dim=3)
+    #outputs = net(inputs)
+    # for batch, (X, y) in enumerate(inputs):
+    #     pred = net(X)
+    #     loss = criterion(pred, y)
+    # for img, lab in zip(inputs, labels):
+    #     pred = net.forward(img)
+    #     running_loss += criterion(pred, lab).item()
+    #     num_correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+    # for n in range(total_images):
+    #     pred = net(inputs[n])
+    #     running_loss += criterion(pred, labels[n]).item()
+    #     num_correct += (pred.argmax(1) ==
+    #                     labels[n]).type(torch.float).sum().item()
+    outputs = net.forward(inp)
+    running_loss = criterion(outputs, labels)
     # TODO-BLOCK-END
 
     # TODO: Backward pass
     # TODO-BLOCK-BEGIN
     optimizer.zero_grad()
-    loss.backward()
+    criterion.backward()
     optimizer.step()
+    running_loss /= total_images
+    num_correct /= total_images
     # TODO-BLOCK-END
 
     return running_loss, num_correct, total_images
