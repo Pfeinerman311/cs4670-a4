@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import transforms, datasets
+import sys
 
 # END IMPORTS
 
@@ -176,7 +177,18 @@ class Contrast(object):
 
         # TODO: Change image contrast
         # TODO-BLOCK-BEGIN
-
+        con = np.random.uniform(
+            self.min_contrast, self.max_contrast + sys.float_info.min)
+        mean = np.zeros(3)
+        for chan in range(3):
+            mean[chan] = np.mean(image[chan, :, :])
+            for row in range(H):
+                for col in range(W):
+                    if con == 0:
+                        image[chan, row, col] = mean[chan]
+                    elif con != 0:
+                        image[chan, row, col] = con * \
+                            (image[chan, row, col] - mean[chan]) + mean[chan]
         # TODO-BLOCK-END
 
         return torch.Tensor(image)
