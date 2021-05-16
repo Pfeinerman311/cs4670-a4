@@ -124,7 +124,17 @@ class Shift(object):
         _, H, W = image.shape
         # TODO: Shift image
         # TODO-BLOCK-BEGIN
-
+        x, y = np.random.randint(-self.max_shift, self.max_shift +
+                                 1), np.random.randint(-self.max_shift, self.max_shift+1)
+        image = np.roll(image, (y, x), axis=(1, 2))
+        if x > 0:
+            image[:, :, :x] = 0
+        elif x < 0:
+            image[:, :, x:] = 0
+        if y > 0:
+            image[:, :y, :] = 0
+        elif y < 0:
+            image[:, y:, :] = 0
         # TODO-BLOCK-END
 
         return torch.Tensor(image)
