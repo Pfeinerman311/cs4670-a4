@@ -26,7 +26,7 @@ class AnimalBaselineNet(nn.Module):
         self.conv1 = nn.Conv2d(3, 6, 3, 2, 1)
         self.conv2 = nn.Conv2d(6, 12, 3, 2, 1)
         self.conv3 = nn.Conv2d(12, 24, 3, 2, 1)
-        self.fc = nn.Linear(1536, 128)
+        self.fc = nn.Linear(8*8*24, 128)
         self.cls = nn.Linear(128, 16)
         # TODO-BLOCK-END
 
@@ -45,8 +45,9 @@ class AnimalBaselineNet(nn.Module):
         x = self.conv3(x)
         #x = torch.reshape(x, (-1, 3, 64, 64))
         #x = torch.reshape(x, (x.shape[0], -1))
-        x = x.flatten(start_dim=2)
+        x = torch.flatten(x, 1)
         x = F.relu(x)
+        #x = x.flatten(start_dim=2)
         x = self.fc(x)
         x = F.relu(x)
         x = self.cls(x)
@@ -83,7 +84,7 @@ def model_train(net, inputs, labels, criterion, optimizer):
     num_correct = 0
     total_images = len(inputs)
     print(inputs.shape)
-    inp = inputs.flatten(start_dim=2, end_dim=3)
+    #inp = inputs.flatten(start_dim=2, end_dim=3)
     #outputs = net(inputs)
     # for batch, (X, y) in enumerate(inputs):
     #     pred = net(X)
@@ -97,14 +98,15 @@ def model_train(net, inputs, labels, criterion, optimizer):
     #     running_loss += criterion(pred, labels[n]).item()
     #     num_correct += (pred.argmax(1) ==
     #                     labels[n]).type(torch.float).sum().item()
-    outputs = net.forward(inp)
-    running_loss = criterion(outputs, labels)
+    outputs = net.forward(inputs)
+    #labs = torch.flatten(labels, 1)
+    running_loss = criterion(outputs, labels.squeeze())
     # TODO-BLOCK-END
 
     # TODO: Backward pass
     # TODO-BLOCK-BEGIN
     optimizer.zero_grad()
-    criterion.backward()
+    running_loss.backward()
     optimizer.step()
     running_loss /= total_images
     num_correct /= total_images
